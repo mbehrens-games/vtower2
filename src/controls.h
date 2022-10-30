@@ -35,6 +35,10 @@ extern const Uint8*   G_keyboard_state;
 
 /* function declarations */
 short int controls_init();
+
+short int controls_menu_enter();
+short int controls_menu_exit();
+
 short int controls_update_from_keyboard();
 short int controls_process_player_input();
 

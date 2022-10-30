@@ -6860,6 +6860,60 @@ short int logic_process_lever_and_switch_flags()
 }
 
 /*******************************************************************************
+** logic_player_death()
+*******************************************************************************/
+short int logic_player_death()
+{
+  entity* e;
+
+  /* set game state flag */
+  G_game_state_flags |= GLOBAL_GAME_STATE_FLAG_DEAD;
+
+  /* play sfx */
+  doremi_play_sfx(SFX_INDEX_PLAYER_DEATH);
+
+  /* unlight pumpkins, make masks smile */
+  for ( e = G_entity_active_list_head[CATEGORY_INDEX_PUMPKINS_GHOSTS_MASKS];
+        e != NULL;
+        e = e->next)
+  {
+    if ((e->type == ENTITY_TYPE_PUMPKIN) && 
+        (e->update_flags & ENTITY_UPDATE_FLAG_ACTIVE))
+    {
+      e->update_flags &= ~ENTITY_UPDATE_FLAG_ACTIVE;
+      animation_setup(e);
+    }
+    else if ( (e->type == ENTITY_TYPE_MASK_HORIZONTAL) && 
+              (e->update_flags & ENTITY_UPDATE_FLAG_ACTIVE))
+    {
+      e->update_flags &= ~ENTITY_UPDATE_FLAG_ACTIVE;
+      animation_setup(e);
+    }
+    else if ( (e->type == ENTITY_TYPE_MASK_VERTICAL) && 
+              (e->update_flags & ENTITY_UPDATE_FLAG_ACTIVE))
+    {
+      e->update_flags &= ~ENTITY_UPDATE_FLAG_ACTIVE;
+      animation_setup(e);
+    }
+  }
+
+  /* deactivate frogs */
+  for ( e = G_entity_active_list_head[CATEGORY_INDEX_LIL_BOTS_WISPS_FROGS];
+        e != NULL;
+        e = e->next)
+  {
+    if ((e->type == ENTITY_TYPE_FROG) && 
+        (e->update_flags & ENTITY_UPDATE_FLAG_ACTIVE))
+    {
+      e->update_flags &= ~ENTITY_UPDATE_FLAG_ACTIVE;
+      entity_set_facing(e, e->orientation & ENTITY_FACING_MASK);
+    }
+  }
+
+  return 0;
+}
+
+/*******************************************************************************
 ** logic_check_if_stood_upon()
 *******************************************************************************/
 short int logic_check_if_stood_upon(entity* e1)
@@ -6940,6 +6994,13 @@ short int logic_check_if_stood_upon(entity* e1)
   {
     e1->special_flags &= ~ENTITY_SPECIAL_FLAG_AWAITING_DESTROY;
     e1->collision_flags |= ENTITY_COLLISION_FLAG_DESTROYED;
+
+    /* if this was the player as a submerged ice cube, process player death */
+    if ((e1->type == ENTITY_TYPE_ICE_CUBE_SUBMERGED) && 
+        (e1 == G_player))
+    {
+      logic_player_death();
+    }
   }
   else if (e1->special_flags & ENTITY_SPECIAL_FLAG_AWAITING_TRANSFORM)
   {
@@ -7603,12 +7664,27 @@ short int logic_check_post_warp_location(entity* e1)
 
         /* otherwise, entity is destroyed */
         e1->collision_flags |= ENTITY_COLLISION_FLAG_DESTROYED;
+
+        /* if the player or player ice cube was destroyed, process player death */
+        if ((e1->type == ENTITY_TYPE_PLAYER_VAMPIRE)                || 
+            (e1->type == ENTITY_TYPE_PLAYER_BAT)                    || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_RIGHT) || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_UP)    || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_LEFT)  || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_DOWN)  || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_RIGHT)     || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_UP)        || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_LEFT)      || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_DOWN))
+        {
+          logic_player_death();
+        }
+
         return 0;
       }
 
-      /* warped onto water or raised floor spikes */
-      if (ENTITY_TYPE_IS_FLOOR_SPIKE_UP(e2->type) ||
-          (e2->type == ENTITY_TYPE_WATER))
+      /* warped onto raised floor spikes */
+      if (ENTITY_TYPE_IS_FLOOR_SPIKE_UP(e2->type))
       {
         if (ENTITY_TYPE_IS_FLYING(e1->type) ||
             ENTITY_TYPE_IS_SPELL(e1->type))
@@ -7618,6 +7694,55 @@ short int logic_check_post_warp_location(entity* e1)
         else
         {
           e1->collision_flags |= ENTITY_COLLISION_FLAG_DESTROYED;
+
+          /* if the player or player ice cube was destroyed, process player death */
+          if ((e1->type == ENTITY_TYPE_PLAYER_VAMPIRE)                || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_RIGHT) || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_UP)    || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_LEFT)  || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_DOWN)  || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_RIGHT)     || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_UP)        || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_LEFT)      || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_DOWN))
+          {
+            logic_player_death();
+          }
+
+          return 0;
+        }
+      }
+
+      /* warped onto water */
+      if (e2->type == ENTITY_TYPE_WATER)
+      {
+        if (ENTITY_TYPE_IS_FLYING(e1->type) ||
+            ENTITY_TYPE_IS_SPELL(e1->type))
+        {
+          continue;
+        }
+        else
+        {
+          /* set update flag if necessary     */
+          /* (actually, after reviewing the   */
+          /* code, this may be redundant...)  */
+          logic_check_if_over_water(e1);
+
+          /* if the player or player ice cube fell into water,  */
+          /* or warped halfway over water, process player death */
+          if ((e1->type == ENTITY_TYPE_PLAYER_VAMPIRE)                || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_RIGHT) || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_UP)    || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_LEFT)  || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_DOWN)  || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_RIGHT)     || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_UP)        || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_LEFT)      || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_DOWN))
+          {
+            logic_player_death();
+          }
+
           return 0;
         }
       }
@@ -7638,6 +7763,13 @@ short int logic_check_post_warp_location(entity* e1)
           if (e2->type == ENTITY_TYPE_CANDLE_LIT)
           {
             e1->collision_flags |= ENTITY_COLLISION_FLAG_DESTROYED;
+
+            /* if the player was destroyed, process player death */
+            if (e1->type == ENTITY_TYPE_PLAYER_BAT)
+            {
+              logic_player_death();
+            }
+
             return 0;
           }
           else
@@ -7648,6 +7780,21 @@ short int logic_check_post_warp_location(entity* e1)
         else
         {
           e1->collision_flags |= ENTITY_COLLISION_FLAG_DESTROYED;
+
+          /* if the player or player ice cube was destroyed, process player death */
+          if ((e1->type == ENTITY_TYPE_PLAYER_VAMPIRE)                || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_RIGHT) || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_UP)    || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_LEFT)  || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_DOWN)  || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_RIGHT)     || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_UP)        || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_LEFT)      || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_DOWN))
+          {
+            logic_player_death();
+          }
+
           return 0;
         }
       }
@@ -7662,6 +7809,21 @@ short int logic_check_post_warp_location(entity* e1)
         else
         {
           e1->collision_flags |= ENTITY_COLLISION_FLAG_DESTROYED;
+
+          /* if the player or player ice cube was destroyed, process player death */
+          if ((e1->type == ENTITY_TYPE_PLAYER_BAT)                    || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_RIGHT) || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_UP)    || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_LEFT)  || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_DOWN)  || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_RIGHT)     || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_UP)        || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_LEFT)      || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_DOWN))
+          {
+            logic_player_death();
+          }
+
           return 0;
         }
       }
@@ -7767,6 +7929,20 @@ short int logic_check_post_freeze_location(entity* e1)
           (!(e2->action_flags & ENTITY_ACTION_FLAG_MOVING)))
       {
         e1->collision_flags |= ENTITY_COLLISION_FLAG_DESTROYED;
+
+        /* if the player ice cube was destroyed, process player death */
+        if ((e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_RIGHT) || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_UP)    || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_LEFT)  || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_DOWN)  || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_RIGHT)     || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_UP)        || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_LEFT)      || 
+            (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_DOWN))
+        {
+          logic_player_death();
+        }
+
         return 0;
       }
     }
@@ -7810,63 +7986,23 @@ short int logic_check_post_freeze_location(entity* e1)
         else
         {
           e1->collision_flags |= ENTITY_COLLISION_FLAG_DESTROYED;
+
+          /* if the player ice cube was destroyed, process player death */
+          if ((e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_RIGHT) || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_UP)    || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_LEFT)  || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_VAMPIRE_DOWN)  || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_RIGHT)     || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_UP)        || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_LEFT)      || 
+              (e1->type == ENTITY_TYPE_ICE_CUBE_PLAYER_BAT_DOWN))
+          {
+            logic_player_death();
+          }
+
           return 0;
         }
       }
-    }
-  }
-
-  return 0;
-}
-
-/*******************************************************************************
-** logic_player_death()
-*******************************************************************************/
-short int logic_player_death()
-{
-  entity* e;
-
-  /* set game state flag */
-  G_game_state_flags |= GLOBAL_GAME_STATE_FLAG_DEAD;
-
-  /* play sfx */
-  doremi_play_sfx(SFX_INDEX_PLAYER_DEATH);
-
-  /* unlight pumpkins, make masks smile */
-  for ( e = G_entity_active_list_head[CATEGORY_INDEX_PUMPKINS_GHOSTS_MASKS];
-        e != NULL;
-        e = e->next)
-  {
-    if ((e->type == ENTITY_TYPE_PUMPKIN) && 
-        (e->update_flags & ENTITY_UPDATE_FLAG_ACTIVE))
-    {
-      e->update_flags &= ~ENTITY_UPDATE_FLAG_ACTIVE;
-      animation_setup(e);
-    }
-    else if ( (e->type == ENTITY_TYPE_MASK_HORIZONTAL) && 
-              (e->update_flags & ENTITY_UPDATE_FLAG_ACTIVE))
-    {
-      e->update_flags &= ~ENTITY_UPDATE_FLAG_ACTIVE;
-      animation_setup(e);
-    }
-    else if ( (e->type == ENTITY_TYPE_MASK_VERTICAL) && 
-              (e->update_flags & ENTITY_UPDATE_FLAG_ACTIVE))
-    {
-      e->update_flags &= ~ENTITY_UPDATE_FLAG_ACTIVE;
-      animation_setup(e);
-    }
-  }
-
-  /* deactivate frogs */
-  for ( e = G_entity_active_list_head[CATEGORY_INDEX_LIL_BOTS_WISPS_FROGS];
-        e != NULL;
-        e = e->next)
-  {
-    if ((e->type == ENTITY_TYPE_FROG) && 
-        (e->update_flags & ENTITY_UPDATE_FLAG_ACTIVE))
-    {
-      e->update_flags &= ~ENTITY_UPDATE_FLAG_ACTIVE;
-      entity_set_facing(e, e->orientation & ENTITY_FACING_MASK);
     }
   }
 

@@ -2374,7 +2374,7 @@ short int render_menu_panel()
   render_text_string("Room Select", 224, 232, RENDER_LEVEL_HUD_FOREGROUND);
   render_text_string("Help", 224, 264, RENDER_LEVEL_HUD_FOREGROUND);
   render_text_string("Options", 224, 296, RENDER_LEVEL_HUD_FOREGROUND);
-  render_text_string("Quit", 224, 328, RENDER_LEVEL_HUD_FOREGROUND);
+  render_text_string("World Select", 224, 328, RENDER_LEVEL_HUD_FOREGROUND);
 
   if (G_cursor_position == 0)
     render_text_string(">", 208, 168, RENDER_LEVEL_HUD_FOREGROUND);
@@ -2598,8 +2598,8 @@ short int render_title_screen()
     render_text_string("Story Scenes", 224, 248, RENDER_LEVEL_HUD_FOREGROUND);
   }
 
-  render_text_string("Version 1.2", 232, 408, RENDER_LEVEL_HUD_FOREGROUND);
-  render_text_string("2018-2021 Michael Behrens", 120, 440, RENDER_LEVEL_HUD_FOREGROUND);
+  render_text_string("Version 1.3", 232, 408, RENDER_LEVEL_HUD_FOREGROUND);
+  render_text_string("2018-2022 Michael Behrens", 120, 440, RENDER_LEVEL_HUD_FOREGROUND);
 
   RENDER_FLUSH_SPRITES()
 

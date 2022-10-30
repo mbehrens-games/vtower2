@@ -490,6 +490,7 @@ short int loop_process_frame()
       doremi_play_music(MUSIC_TYPE_WORLD);
 
       G_game_mode = GAME_MODE_PLAYING;
+      controls_menu_exit();
     }
     /* back to title screen */
     else if ( (G_current_hud_flags & CONTROLS_HUD_FLAG_CANCEL) &&
@@ -760,6 +761,7 @@ short int loop_process_frame()
         doremi_play_music(MUSIC_TYPE_WORLD);
 
         G_game_mode = GAME_MODE_PLAYING;
+        controls_menu_exit();
       }
       else
       {
@@ -776,10 +778,11 @@ short int loop_process_frame()
   /* playing */
   else if (G_game_mode == GAME_MODE_PLAYING)
   {
-    if ( (G_current_hud_flags & CONTROLS_HUD_FLAG_CANCEL) &&
-              (!(G_last_hud_flags & CONTROLS_HUD_FLAG_CANCEL)))
+    if ((G_current_hud_flags & CONTROLS_HUD_FLAG_CANCEL) &&
+        (!(G_last_hud_flags & CONTROLS_HUD_FLAG_CANCEL)))
     {
       G_game_mode = GAME_MODE_MENU_PANEL;
+      controls_menu_enter();
       G_cursor_position = 0;
       return 0;
     }
@@ -787,6 +790,7 @@ short int loop_process_frame()
               (!(G_last_hud_flags & CONTROLS_HUD_FLAG_HELP)))
     {
       G_game_mode = GAME_MODE_HELP_SCREEN;
+      controls_menu_enter();
       G_cursor_position = 0;
       return 0;
     }
@@ -794,6 +798,7 @@ short int loop_process_frame()
               (!(G_last_hud_flags & CONTROLS_HUD_FLAG_ROOM_SELECT)))
     {
       G_game_mode = GAME_MODE_ROOM_SELECT_PANEL;
+      controls_menu_enter();
       G_cursor_position = G_current_level_index % 15;
       return 0;
     }
@@ -801,6 +806,7 @@ short int loop_process_frame()
               (!(G_last_hud_flags & CONTROLS_HUD_FLAG_PAUSE)))
     {
       G_game_mode = GAME_MODE_PAUSED;
+      controls_menu_enter();
       doremi_play_sfx(SFX_INDEX_PAUSE);
       doremi_pause_music();
       return 0;
@@ -809,6 +815,7 @@ short int loop_process_frame()
               (!(G_last_hud_flags & CONTROLS_HUD_FLAG_RESTART)))
     {
       G_game_mode = GAME_MODE_TRY_AGAIN_PANEL;
+      controls_menu_enter();
       G_cursor_position = 0;
       return 0;
     }
@@ -816,6 +823,7 @@ short int loop_process_frame()
               (!(G_last_hud_flags & CONTROLS_HUD_FLAG_OPTIONS)))
     {
       G_game_mode = GAME_MODE_OPTIONS_PANEL;
+      controls_menu_enter();
       G_cursor_position = 0;
       return 0;
     }
@@ -827,6 +835,7 @@ short int loop_process_frame()
         (!(G_last_hud_flags & CONTROLS_HUD_FLAG_CANCEL)))
     {
       G_game_mode = GAME_MODE_PLAYING;
+      controls_menu_exit();
       doremi_play_sfx(SFX_INDEX_PAUSE);
       doremi_unpause_music();
       return 0;
@@ -835,6 +844,7 @@ short int loop_process_frame()
               (!(G_last_hud_flags & CONTROLS_HUD_FLAG_PAUSE)))
     {
       G_game_mode = GAME_MODE_PLAYING;
+      controls_menu_exit();
       doremi_play_sfx(SFX_INDEX_PAUSE);
       doremi_unpause_music();
       return 0;
@@ -860,6 +870,7 @@ short int loop_process_frame()
               (!(G_last_hud_flags & CONTROLS_HUD_FLAG_CANCEL)))
     {
       G_game_mode = GAME_MODE_PLAYING;
+      controls_menu_exit();
       return 0;
     }
     /* close panel */
@@ -867,6 +878,7 @@ short int loop_process_frame()
               (!(G_last_hud_flags & CONTROLS_HUD_FLAG_ROOM_SELECT)))
     {
       G_game_mode = GAME_MODE_PLAYING;
+      controls_menu_exit();
       return 0;
     }
   }
@@ -877,12 +889,14 @@ short int loop_process_frame()
         (!(G_last_hud_flags & CONTROLS_HUD_FLAG_CANCEL)))
     {
       G_game_mode = GAME_MODE_PLAYING;
+      controls_menu_exit();
       return 0;
     }
     else if ( (G_current_hud_flags & CONTROLS_HUD_FLAG_OPTIONS) &&
               (!(G_last_hud_flags & CONTROLS_HUD_FLAG_OPTIONS)))
     {
       G_game_mode = GAME_MODE_PLAYING;
+      controls_menu_exit();
       return 0;
     }
   }
@@ -893,12 +907,14 @@ short int loop_process_frame()
         (!(G_last_hud_flags & CONTROLS_HUD_FLAG_CANCEL)))
     {
       G_game_mode = GAME_MODE_PLAYING;
+      controls_menu_exit();
       return 0;
     }
     else if ( (G_current_hud_flags & CONTROLS_HUD_FLAG_HELP) &&
               (!(G_last_hud_flags & CONTROLS_HUD_FLAG_HELP)))
     {
       G_game_mode = GAME_MODE_PLAYING;
+      controls_menu_exit();
       return 0;
     }
   }
@@ -923,6 +939,7 @@ short int loop_process_frame()
         logic_set_enemy_animations_based_on_player_position();
 
         G_game_mode = GAME_MODE_PLAYING;
+        controls_menu_exit();
         return 0;
       }
       /* no selected */
@@ -941,6 +958,7 @@ short int loop_process_frame()
         else
         {
           G_game_mode = GAME_MODE_PLAYING;
+          controls_menu_exit();
           return 0;
         }
       }
@@ -961,27 +979,28 @@ short int loop_process_frame()
       else
       {
         G_game_mode = GAME_MODE_PLAYING;
+        controls_menu_exit();
         return 0;
       }
     }
     else if ( (G_current_hud_flags & CONTROLS_HUD_FLAG_RESTART) &&
               (!(G_last_hud_flags & CONTROLS_HUD_FLAG_RESTART)))
     {
-      if ((G_game_state_flags & GLOBAL_GAME_STATE_FLAG_DEAD) ||
-          (G_game_state_flags & GLOBAL_GAME_STATE_FLAG_BLOOD_LOST))
-      {
-        G_game_mode = GAME_MODE_WORLD_SELECT;
-        save_game_write();
-        doremi_play_music(MUSIC_TYPE_MAIN_MENU);
-        G_cursor_position = (G_current_level_index / 15) % 22;
-        G_silver_cursor_frame = 0;
-        return 0;
-      }
-      else
-      {
-        G_game_mode = GAME_MODE_PLAYING;
-        return 0;
-      }
+      level_load_to_world(&G_levels_all[G_current_level_index]);
+      logic_setup_level();
+      G_game_state_flags = GLOBAL_GAME_STATE_FLAGS_CLEAR;
+      G_time_elapsed_ms = 0;
+
+      /* update world */
+      world_update_animations();
+
+      /* light pumpkins, etc */
+      logic_set_enemy_animations_based_on_player_position();
+
+      G_game_mode = GAME_MODE_PLAYING;
+      controls_menu_exit();
+
+      return 0;
     }
   }
   /* menu panel */
@@ -994,6 +1013,7 @@ short int loop_process_frame()
       if (G_cursor_position == 0)
       {
         G_game_mode = GAME_MODE_PLAYING;
+        controls_menu_exit();
         return 0;
       }
       /* retry room selected */
@@ -1039,6 +1059,7 @@ short int loop_process_frame()
               (!(G_last_hud_flags & CONTROLS_HUD_FLAG_CANCEL)))
     {
       G_game_mode = GAME_MODE_PLAYING;
+      controls_menu_exit();
       return 0;
     }
   }
@@ -1623,7 +1644,44 @@ short int loop_process_frame()
   else if (G_game_mode == GAME_MODE_PLAYING)
   {
     /* if player has pressed a key, start the level */
-    if (G_current_input_flags)
+    if ((G_current_input_flags & CONTROLS_INPUT_FLAG_RIGHT) &&
+        (!(G_last_input_flags & CONTROLS_INPUT_FLAG_RIGHT)))
+    {
+      G_game_state_flags |= GLOBAL_GAME_STATE_FLAG_STARTED;
+    }
+
+    if ((G_current_input_flags & CONTROLS_INPUT_FLAG_UP) &&
+        (!(G_last_input_flags & CONTROLS_INPUT_FLAG_UP)))
+    {
+      G_game_state_flags |= GLOBAL_GAME_STATE_FLAG_STARTED;
+    }
+
+    if ((G_current_input_flags & CONTROLS_INPUT_FLAG_LEFT) &&
+        (!(G_last_input_flags & CONTROLS_INPUT_FLAG_LEFT)))
+    {
+      G_game_state_flags |= GLOBAL_GAME_STATE_FLAG_STARTED;
+    }
+
+    if ((G_current_input_flags & CONTROLS_INPUT_FLAG_DOWN) &&
+        (!(G_last_input_flags & CONTROLS_INPUT_FLAG_DOWN)))
+    {
+      G_game_state_flags |= GLOBAL_GAME_STATE_FLAG_STARTED;
+    }
+
+    if ((G_current_input_flags & CONTROLS_INPUT_FLAG_BAT) &&
+        (!(G_last_input_flags & CONTROLS_INPUT_FLAG_BAT)))
+    {
+      G_game_state_flags |= GLOBAL_GAME_STATE_FLAG_STARTED;
+    }
+
+    if ((G_current_input_flags & CONTROLS_INPUT_FLAG_ICE) &&
+        (!(G_last_input_flags & CONTROLS_INPUT_FLAG_ICE)))
+    {
+      G_game_state_flags |= GLOBAL_GAME_STATE_FLAG_STARTED;
+    }
+
+    if ((G_current_input_flags & CONTROLS_INPUT_FLAG_WARP) &&
+        (!(G_last_input_flags & CONTROLS_INPUT_FLAG_WARP)))
     {
       G_game_state_flags |= GLOBAL_GAME_STATE_FLAG_STARTED;
     }

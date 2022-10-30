@@ -36,6 +36,63 @@ short int controls_init()
 }
 
 /*******************************************************************************
+** controls_menu_enter()
+*******************************************************************************/
+short int controls_menu_enter()
+{
+  /* clear the input flags */
+  G_current_input_flags = CONTROLS_INPUT_FLAGS_CLEAR;
+
+  G_last_input_flags = G_current_input_flags;
+
+  /* set the hud flags so we do not read an extra button press */
+  G_current_hud_flags = CONTROLS_HUD_FLAGS_CLEAR;
+
+  G_current_hud_flags |= CONTROLS_HUD_FLAG_CONFIRM;
+  G_current_hud_flags |= CONTROLS_HUD_FLAG_CANCEL;
+
+  G_current_hud_flags |= CONTROLS_HUD_FLAG_HELP;
+  G_current_hud_flags |= CONTROLS_HUD_FLAG_ROOM_SELECT;
+  G_current_hud_flags |= CONTROLS_HUD_FLAG_RESTART;
+  G_current_hud_flags |= CONTROLS_HUD_FLAG_PAUSE;
+  G_current_hud_flags |= CONTROLS_HUD_FLAG_OPTIONS;
+
+  G_last_hud_flags = G_current_hud_flags;
+
+  return 0;
+}
+
+/*******************************************************************************
+** controls_menu_exit()
+*******************************************************************************/
+short int controls_menu_exit()
+{
+  /* if we are exiting a menu, set up the input flags so  */
+  /* we do not read a button press on Z or X this frame   */
+  G_current_input_flags = CONTROLS_INPUT_FLAGS_CLEAR;
+
+  G_current_input_flags |= CONTROLS_INPUT_FLAG_BAT;
+  G_current_input_flags |= CONTROLS_INPUT_FLAG_ICE;
+
+  G_last_input_flags = G_current_input_flags;
+
+  /* set the hud flags so we do not read an extra cancel */
+  G_current_hud_flags = CONTROLS_HUD_FLAGS_CLEAR;
+
+  G_current_hud_flags |= CONTROLS_HUD_FLAG_CANCEL;
+
+  G_current_hud_flags |= CONTROLS_HUD_FLAG_HELP;
+  G_current_hud_flags |= CONTROLS_HUD_FLAG_ROOM_SELECT;
+  G_current_hud_flags |= CONTROLS_HUD_FLAG_RESTART;
+  G_current_hud_flags |= CONTROLS_HUD_FLAG_PAUSE;
+  G_current_hud_flags |= CONTROLS_HUD_FLAG_OPTIONS;
+
+  G_last_hud_flags = G_current_hud_flags;
+
+  return 0;
+}
+
+/*******************************************************************************
 ** controls_update_from_keyboard()
 *******************************************************************************/
 short int controls_update_from_keyboard()
@@ -56,33 +113,52 @@ short int controls_update_from_keyboard()
   if (G_keyboard_state[SDL_SCANCODE_DOWN])
     G_current_input_flags |= CONTROLS_INPUT_FLAG_DOWN;
 
-  if (G_keyboard_state[SDL_SCANCODE_Z])
-    G_current_input_flags |= CONTROLS_INPUT_FLAG_BAT;
+  if (G_game_mode == GAME_MODE_PLAYING)
+  {
+    if (G_keyboard_state[SDL_SCANCODE_Z])
+      G_current_input_flags |= CONTROLS_INPUT_FLAG_BAT;
 
-  if (G_keyboard_state[SDL_SCANCODE_X])
-    G_current_input_flags |= CONTROLS_INPUT_FLAG_ICE;
+    if (G_keyboard_state[SDL_SCANCODE_X])
+      G_current_input_flags |= CONTROLS_INPUT_FLAG_ICE;
 
-  if (G_keyboard_state[SDL_SCANCODE_C])
-    G_current_input_flags |= CONTROLS_INPUT_FLAG_WARP;
+    if (G_keyboard_state[SDL_SCANCODE_C])
+      G_current_input_flags |= CONTROLS_INPUT_FLAG_WARP;
 
-  if (G_keyboard_state[SDL_SCANCODE_LSHIFT])
-    G_current_input_flags |= CONTROLS_INPUT_FLAG_HOLD;
+    if (G_keyboard_state[SDL_SCANCODE_LSHIFT])
+      G_current_input_flags |= CONTROLS_INPUT_FLAG_HOLD;
 
-  if (G_keyboard_state[SDL_SCANCODE_RSHIFT])
-    G_current_input_flags |= CONTROLS_INPUT_FLAG_HOLD;
+    if (G_keyboard_state[SDL_SCANCODE_RSHIFT])
+      G_current_input_flags |= CONTROLS_INPUT_FLAG_HOLD;
+  }
 
   /* hud keys */
   G_last_hud_flags = G_current_hud_flags;
   G_current_hud_flags = CONTROLS_HUD_FLAGS_CLEAR;
 
-  if (G_keyboard_state[SDL_SCANCODE_RETURN])
-    G_current_hud_flags |= CONTROLS_HUD_FLAG_CONFIRM;
+  /* in game */
+  if (G_game_mode == GAME_MODE_PLAYING)
+  {
+    if (G_keyboard_state[SDL_SCANCODE_RETURN])
+      G_current_hud_flags |= CONTROLS_HUD_FLAG_CANCEL;
 
-  if (G_keyboard_state[SDL_SCANCODE_SPACE])
-    G_current_hud_flags |= CONTROLS_HUD_FLAG_CONFIRM;
+    if (G_keyboard_state[SDL_SCANCODE_ESCAPE])
+      G_current_hud_flags |= CONTROLS_HUD_FLAG_CANCEL;
+  }
+  /* in menus */
+  else
+  {
+    if (G_keyboard_state[SDL_SCANCODE_RETURN])
+      G_current_hud_flags |= CONTROLS_HUD_FLAG_CONFIRM;
 
-  if (G_keyboard_state[SDL_SCANCODE_ESCAPE])
-    G_current_hud_flags |= CONTROLS_HUD_FLAG_CANCEL;
+    if (G_keyboard_state[SDL_SCANCODE_ESCAPE])
+      G_current_hud_flags |= CONTROLS_HUD_FLAG_CANCEL;
+
+    if (G_keyboard_state[SDL_SCANCODE_Z])
+      G_current_hud_flags |= CONTROLS_HUD_FLAG_CONFIRM;
+
+    if (G_keyboard_state[SDL_SCANCODE_X])
+      G_current_hud_flags |= CONTROLS_HUD_FLAG_CANCEL;
+  }
 
   if (G_keyboard_state[SDL_SCANCODE_F1])
     G_current_hud_flags |= CONTROLS_HUD_FLAG_HELP;
